@@ -86,6 +86,7 @@ public class LockscreenInterface extends SettingsPreferenceFragment implements
 	private ListPreference mClockAlign;
     private ListPreference mBatteryStatus;
     private PreferenceScreen mLockscreenButtons;
+    private PreferenceScreen parent;
     private Activity mActivity;
     ContentResolver mResolver;
     ColorPickerPreference mCirclesLockBgColor;
@@ -108,6 +109,9 @@ public class LockscreenInterface extends SettingsPreferenceFragment implements
         super.onCreate(savedInstanceState);
         mActivity = getActivity();
         mResolver = mActivity.getContentResolver();
+
+        addPreferencesFromResource(R.xml.lockscreen_interface_settings);
+        parent = getPreferenceScreen();
 
         mCirclesLock = Settings.System.getBoolean(getActivity().getContentResolver(),
                 Settings.System.USE_CIRCLES_LOCKSCREEN, false);
@@ -175,7 +179,7 @@ public class LockscreenInterface extends SettingsPreferenceFragment implements
 
         mLockscreenButtons = (PreferenceScreen) findPreference(KEY_LOCKSCREEN_BUTTONS);
         if (!hasButtons()) {
-            getPreferenceScreen().removePreference(mLockscreenButtons);
+            parent.removePreference(mLockscreenButtons);
         }
 
         mIsScreenLarge = Utils.isTablet(getActivity());
@@ -187,11 +191,11 @@ public class LockscreenInterface extends SettingsPreferenceFragment implements
 
     public void createCustomLockscreenView() {
         if (mCirclesLock) {
-              addPreferencesFromResource(R.xml.lockscreen_interface_settings_circles);
+              parent.addPreferencesFromResource(R.xml.lockscreen_interface_settings_circles);
         }else if (mBlackBerryLock) {
-              addPreferencesFromResource(R.xml.lockscreen_interface_settings_blackberry);
+              parent.addPreferencesFromResource(R.xml.lockscreen_interface_settings_blackberry);
         }else {
-              addPreferencesFromResource(R.xml.lockscreen_interface_settings);
+              parent.addPreferencesFromResource(R.xml.lockscreen_interface_settings_stock);
         }
 
     }
@@ -480,9 +484,11 @@ public class LockscreenInterface extends SettingsPreferenceFragment implements
           mBlackBerryLock = Settings.System.getBoolean(mContext.getContentResolver(),
                 Settings.System.USE_BLACKBERRY_LOCKSCREEN, false);
 
-           getPreferenceScreen().removeAll();
+           PreferenceScreen parent = (PreferenceScreen) findPreference("root");
+           parent.removeAll();
            createCustomLockscreenView();
         }
     }
 
 }
+
