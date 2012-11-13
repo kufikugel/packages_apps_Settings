@@ -50,6 +50,12 @@ import com.android.settings.notificationlight.ColorPickerView;
 
 import net.margaritov.preference.colorpicker.ColorPickerPreference;
 
+import android.database.ContentObserver;
+import android.net.Uri;
+import android.os.Handler;
+import android.content.ContentResolver;
+
+
 public class LockscreenInterface extends SettingsPreferenceFragment implements
         Preference.OnPreferenceChangeListener {
     private static final String TAG = "LockscreenInterface";
@@ -103,20 +109,32 @@ public class LockscreenInterface extends SettingsPreferenceFragment implements
         mActivity = getActivity();
         mResolver = mActivity.getContentResolver();
 
-        addPreferencesFromResource(R.xml.lockscreen_interface_settings);
+        mCirclesLock = Settings.System.getBoolean(getActivity().getContentResolver(),
+                Settings.System.USE_CIRCLES_LOCKSCREEN, false);
+    
+        mBlackBerryLock = Settings.System.getBoolean(getActivity().getContentResolver(),
+                Settings.System.USE_BLACKBERRY_LOCKSCREEN, false);
+
+        createCustomLockscreenView();
+
+        SettingsObserver observer = new SettingsObserver(new Handler());
+        observer.observe();
+
         mWeatherPref = (Preference) findPreference(KEY_WEATHER_PREF);
         mCalendarPref = (Preference) findPreference(KEY_CALENDAR_PREF);
 
-        mCustomBackground = (ListPreference) findPreference(KEY_BACKGROUND_PREF);
-        mCustomBackground.setOnPreferenceChangeListener(this);
-        wallpaperImage = new File(mActivity.getFilesDir()+"/lockwallpaper");
-        wallpaperTemporary = new File(mActivity.getCacheDir()+"/lockwallpaper.tmp");
+        if (!mCirclesLock && !mBlackBerryLock) {
+            mCustomBackground = (ListPreference) findPreference(KEY_BACKGROUND_PREF);
+            mCustomBackground.setOnPreferenceChangeListener(this);
+            wallpaperImage = new File(mActivity.getFilesDir()+"/lockwallpaper");
+            wallpaperTemporary = new File(mActivity.getCacheDir()+"/lockwallpaper.tmp");
 
-        mWidgetsAlignment = (ListPreference) findPreference(KEY_WIDGETS_PREF);
-        mWidgetsAlignment.setOnPreferenceChangeListener(this);
-        mWidgetsAlignment.setValue(Settings.System.getInt(getActivity()
-                .getContentResolver(), Settings.System.LOCKSCREEN_LAYOUT,
+            mWidgetsAlignment = (ListPreference) findPreference(KEY_WIDGETS_PREF);
+            mWidgetsAlignment.setOnPreferenceChangeListener(this);
+            mWidgetsAlignment.setValue(Settings.System.getInt(getActivity()
+                    .getContentResolver(), Settings.System.LOCKSCREEN_LAYOUT,
                 0) + "");
+        }
 
         mBatteryStatus = (ListPreference) findPreference(KEY_ALWAYS_BATTERY_PREF);
         mBatteryStatus.setOnPreferenceChangeListener(this);
@@ -124,20 +142,24 @@ public class LockscreenInterface extends SettingsPreferenceFragment implements
         mLockscreenTextColor = (ColorPickerPreference) findPreference(PREF_LOCKSCREEN_TEXT_COLOR);
         mLockscreenTextColor.setOnPreferenceChangeListener(this);
 
-		mClockAlign = (ListPreference) findPreference(KEY_CLOCK_ALIGN);
-        mClockAlign.setOnPreferenceChangeListener(this);
+        if (!mCirclesLock) {
+    		mClockAlign = (ListPreference) findPreference(KEY_CLOCK_ALIGN);
+            mClockAlign.setOnPreferenceChangeListener(this);
+        }
 
-        mCirclesLockBgColor = (ColorPickerPreference) findPreference(PREF_CIRCLES_LOCK_BG_COLOR);
-        mCirclesLockBgColor.setOnPreferenceChangeListener(this);
+        if (mCirclesLock) {
+            mCirclesLockBgColor = (ColorPickerPreference) findPreference(PREF_CIRCLES_LOCK_BG_COLOR);
+            mCirclesLockBgColor.setOnPreferenceChangeListener(this);
+    
+            mCirclesLockRingColor = (ColorPickerPreference) findPreference(PREF_CIRCLES_LOCK_RING_COLOR);
+            mCirclesLockRingColor.setOnPreferenceChangeListener(this);
 
-        mCirclesLockRingColor = (ColorPickerPreference) findPreference(PREF_CIRCLES_LOCK_RING_COLOR);
-        mCirclesLockRingColor.setOnPreferenceChangeListener(this);
+            mCirclesLockHaloColor = (ColorPickerPreference) findPreference(PREF_CIRCLES_LOCK_HALO_COLOR);
+            mCirclesLockHaloColor.setOnPreferenceChangeListener(this);
 
-        mCirclesLockHaloColor = (ColorPickerPreference) findPreference(PREF_CIRCLES_LOCK_HALO_COLOR);
-        mCirclesLockHaloColor.setOnPreferenceChangeListener(this);
-
-        mCirclesLockWaveColor = (ColorPickerPreference) findPreference(PREF_CIRCLES_LOCK_WAVE_COLOR);
-        mCirclesLockWaveColor.setOnPreferenceChangeListener(this);
+            mCirclesLockWaveColor = (ColorPickerPreference) findPreference(PREF_CIRCLES_LOCK_WAVE_COLOR);
+            mCirclesLockWaveColor.setOnPreferenceChangeListener(this);
+        }
 
         mVibratePref = (CheckBoxPreference) findPreference(KEY_VIBRATE_PREF);
         boolean bVibrate = Settings.System.getInt(getActivity().getApplicationContext().getContentResolver(),
@@ -158,43 +180,18 @@ public class LockscreenInterface extends SettingsPreferenceFragment implements
 
         mIsScreenLarge = Utils.isTablet(getActivity());
 
-        createCustomLockscreenView();
-        updateCustomBackgroundSummary();
-
+        if (!mCirclesLock && !mBlackBerryLock) {
+            updateCustomBackgroundSummary();
+        }
     }
 
     public void createCustomLockscreenView() {
-        mCirclesLock = Settings.System.getBoolean(getActivity().getContentResolver(),
-                Settings.System.USE_CIRCLES_LOCKSCREEN, false);
-    
-        mBlackBerryLock = Settings.System.getBoolean(getActivity().getContentResolver(),
-                Settings.System.USE_BLACKBERRY_LOCKSCREEN, false);
-
         if (mCirclesLock) {
-            PreferenceCategory stockCategory = (PreferenceCategory) findPreference("lockscreen_style_options");
-            getPreferenceScreen().removePreference(stockCategory);
-            PreferenceCategory blackberryCategory = (PreferenceCategory) findPreference("lockscreen_style_options_blackberry");
-            getPreferenceScreen().removePreference(blackberryCategory);
-            PreferenceCategory interfaceCategory = (PreferenceCategory) findPreference("lockscreen_interface_options");
-            getPreferenceScreen().removePreference(interfaceCategory);
+              addPreferencesFromResource(R.xml.lockscreen_interface_settings_circles);
         }else if (mBlackBerryLock) {
-            PreferenceCategory stockCategory = (PreferenceCategory) findPreference("lockscreen_style_options");
-            getPreferenceScreen().removePreference(stockCategory);
-            PreferenceCategory circlesCategory = (PreferenceCategory) findPreference("lockscreen_style_options_circles");
-            getPreferenceScreen().removePreference(circlesCategory);
-            PreferenceCategory circlesColorCategory = (PreferenceCategory) findPreference("circles_lockscreen");
-            getPreferenceScreen().removePreference(circlesColorCategory);
-            PreferenceCategory interfaceCategory = (PreferenceCategory) findPreference("lockscreen_interface_options");
-            getPreferenceScreen().removePreference(interfaceCategory);
+              addPreferencesFromResource(R.xml.lockscreen_interface_settings_blackberry);
         }else {
-            PreferenceCategory circleCategory = (PreferenceCategory) findPreference("lockscreen_style_options_circles");
-            getPreferenceScreen().removePreference(circleCategory);
-            PreferenceCategory blackberryCategory = (PreferenceCategory) findPreference("lockscreen_style_options_blackberry");
-            getPreferenceScreen().removePreference(blackberryCategory);
-            PreferenceCategory circlesColorCategory = (PreferenceCategory) findPreference("circles_lockscreen");
-            getPreferenceScreen().removePreference(circlesColorCategory);
-            PreferenceCategory interfaceAltCategory = (PreferenceCategory) findPreference("lockscreen_interface_options_alt");
-            getPreferenceScreen().removePreference(interfaceAltCategory);
+              addPreferencesFromResource(R.xml.lockscreen_interface_settings);
         }
 
     }
@@ -460,6 +457,32 @@ public class LockscreenInterface extends SettingsPreferenceFragment implements
             return true;
         }
         return false;
+    }
+
+	
+
+    class SettingsObserver extends ContentObserver {
+        SettingsObserver(Handler handler) {
+            super(handler);
+        }
+
+        void observe() {
+          ContentResolver resolver = mContext.getContentResolver();
+          resolver.registerContentObserver(Settings.System.getUriFor(Settings.System.USE_CIRCLES_LOCKSCREEN), false, this);
+          resolver.registerContentObserver(Settings.System.getUriFor(Settings.System.USE_BLACKBERRY_LOCKSCREEN), false, this);
+        }
+
+        @Override
+        public void onChange(boolean selfChange, Uri uri) {
+
+          mCirclesLock = Settings.System.getBoolean(mContext.getContentResolver(),
+                Settings.System.USE_CIRCLES_LOCKSCREEN, false);
+          mBlackBerryLock = Settings.System.getBoolean(mContext.getContentResolver(),
+                Settings.System.USE_BLACKBERRY_LOCKSCREEN, false);
+
+           getPreferenceScreen().removeAll();
+           createCustomLockscreenView();
+        }
     }
 
 }

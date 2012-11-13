@@ -23,14 +23,6 @@
         android:title="@string/lockscreen_style_options_title">
         
         <ListPreference
-            android:key="lockscreen_background"
-            android:persistent="false"
-            android:dialogTitle="@string/lockscreen_custom_background_title"
-            android:title="@string/lockscreen_custom_background_title"
-            android:entries="@array/lockscreen_background_entries"
-            android:entryValues="@array/lockscreen_background_values"/>
-
-        <ListPreference
             android:key="lockscreen_clock_align"
             android:persistent="false"
             android:dialogTitle="@string/lockscreen_clock_align_title"
@@ -42,27 +34,12 @@
             android:key="lockscreen_text_color"
             android:title="@string/lockscreen_text_color_title"
             android:defaultValue="#ffffffff" />
-        
+     
     </PreferenceCategory>
 
     <PreferenceCategory
         android:key="lockscreen_interface_options"
         android:title="@string/lockscreen_interface_options_title">
-
-        <ListPreference
-            android:key="lockscreen_widgets"
-            android:persistent="false"
-            android:dialogTitle="@string/lockscreen_widgets_title"
-            android:title="@string/lockscreen_widgets_title"
-            android:entries="@array/lockscreen_widgets_entries"
-            android:entryValues="@array/lockscreen_widgets_values"
-            android:summary="@string/lockscreen_widgets_summary" />
-
-        <Preference
-            android:fragment="com.android.settings.cnd.LockscreenTargets"
-            android:key="lockscreen_targets"
-            android:summary="@string/lockscreen_target_summary"
-            android:title="@string/lockscreen_target_title" />
 
         <ListPreference
             android:key="lockscreen_battery_status"
@@ -83,6 +60,7 @@
             android:key="lockscreen_calendar"
             android:summary="@string/lockscreen_calendar_summary"
             android:title="@string/lockscreen_calendar_title" />
+
     </PreferenceCategory>
 
     <PreferenceCategory
